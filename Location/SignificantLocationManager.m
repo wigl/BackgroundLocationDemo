@@ -84,13 +84,22 @@ static SignificantLocationManager *manager;
     //发送通知，刷新界面
     [[NSNotificationCenter defaultCenter] postNotificationName:@"SignificantLocationDidUpdateLocations" object:nil];
     self.num++;
-    
+
     //如果你需要上传位置信息，且程序处于后台，需要调用beginBackgroundTaskWithExpirationHandler来执行网络请求操作
     if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
-        [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+        UIApplication *application = [UIApplication sharedApplication];
+        //申请开台时间
+        __block UIBackgroundTaskIdentifier bgTask = [application beginBackgroundTaskWithExpirationHandler:^{
+            [application endBackgroundTask:bgTask];
+            bgTask = UIBackgroundTaskInvalid;
+        }];
+        
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             //上传地理位置信息..
 //            NSURLSession *session = ...
-        }];
+            [application endBackgroundTask:bgTask];
+            bgTask = UIBackgroundTaskInvalid;
+        });
     }
 }
 
